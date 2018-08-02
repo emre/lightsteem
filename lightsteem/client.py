@@ -30,11 +30,11 @@ class Client:
 
     def request(self, *args, **kwargs):
 
-        if kwargs.get("batch_data"):
-            # if that's a batch call, don't do any formatting on data.
-            # since it's already formatted for the app base.
-            data = kwargs.get("batch_data")
-        else:
+        # if that's a batch call, don't do any formatting on data.
+        # since it's already formatted for the app base.
+        data = kwargs.get("batch_data", None)
+
+        if not data:
             method_name, params = args[0:2]
             if not params:
                 if method_name != 'condenser_api':
@@ -43,7 +43,7 @@ class Client:
                 "jsonrpc": "2.0",
                 "method": f"{self.api_type}.{method_name}",
                 "params": params,
-                "id": kwargs.get("request_id") or self.pick_id_for_request(),
+                "id": kwargs.get("request_id", self.pick_id_for_request()),
             }
 
         if kwargs.get("batch"):
