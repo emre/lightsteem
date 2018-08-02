@@ -39,7 +39,7 @@ from lightsteem.client import Client
 
 client = Client()
 
-print(c.get_dynamic_global_properties())
+print(client.get_dynamic_global_properties())
 ```
 
 By default, client uses condenser_api to make the calls. If you
@@ -54,7 +54,7 @@ from lightsteem.client import Client
 
 client = Client()
 
-accounts = c('account_by_key_api').get_key_references({
+accounts = client('account_by_key_api').get_key_references({
     "keys":["STM5jZtLoV8YbxCxr4imnbWn61zMB24wwonpnVhfXRmv7j6fk3dTH"]
 })
 
