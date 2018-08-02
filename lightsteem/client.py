@@ -36,7 +36,7 @@ class Client:
             # sent by the user.
             params = [] if self.api_type == "condenser_api" else {}
         else:
-            params = args[1]
+            params = args[1:] if self.api_type == "condenser_api" else args[1]
 
         data = {
             "jsonrpc": "2.0",
@@ -49,10 +49,11 @@ class Client:
 
     def request(self, *args, **kwargs):
 
-        if kwargs.get("batch_data"):
+        batch_data = kwargs.get("batch_data")
+        if batch_data:
             # if that's a batch call, don't do any formatting on data.
             # since it's already formatted for the app base.
-            data = kwargs.get("batch_data")
+            data = batch_data
         else:
             data = self.get_rpc_request_body(args, kwargs)
 
