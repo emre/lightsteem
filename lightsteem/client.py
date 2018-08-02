@@ -28,6 +28,25 @@ class Client:
     def pick_id_for_request(self):
         return str(uuid.uuid4())
 
+    def get_rpc_request_body(self, args, kwargs):
+        method_name = args[0]
+        if len(args) == 1:
+            # condenser_api expects an empty list
+            # while other apis expects an empty dict if no arguments
+            # sent by the user.
+            params = [] if self.api_type == "condenser_api" else {}
+        else:
+            params = args[1]
+
+        data = {
+            "jsonrpc": "2.0",
+            "method": f"{self.api_type}.{method_name}",
+            "params": params,
+            "id": kwargs.get("request_id") or self.pick_id_for_request(),
+        }
+
+        return data
+
     def request(self, *args, **kwargs):
 
         if kwargs.get("batch_data"):
@@ -35,19 +54,11 @@ class Client:
             # since it's already formatted for the app base.
             data = kwargs.get("batch_data")
         else:
-            method_name, params = args[0:2]
-            if not params:
-                if method_name != 'condenser_api':
-                    params = {}
-            data = {
-                "jsonrpc": "2.0",
-                "method": f"{self.api_type}.{method_name}",
-                "params": params,
-                "id": kwargs.get("request_id") or self.pick_id_for_request(),
-            }
+            data = self.get_rpc_request_body(args, kwargs)
 
         if kwargs.get("batch"):
             self.queue.append(data)
+            return
 
         response = requests.post(
             self.pick_node(),
