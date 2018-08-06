@@ -3,6 +3,7 @@ import uuid
 
 DEFAULT_NODES = ["https://api.steemit.com", ]
 
+
 class Client:
 
     def __init__(self, nodes=None, batch_mode=False):
@@ -13,6 +14,7 @@ class Client:
     def __getattr__(self, attr):
         def callable(*args, **kwargs):
             return self.request(attr, *args, **kwargs)
+
         return callable
 
     def __call__(self, *args, **kwargs):
@@ -66,7 +68,13 @@ class Client:
             json=data,
         ).json()
 
-        return response
+        response_dict = response["result"]
+        if 'request_id' in kwargs and isinstance(response_dict, dict):
+            response_dict.update({
+                "request_id": response
+            })
+
+        return response_dict
 
     def process_batch(self):
         try:
