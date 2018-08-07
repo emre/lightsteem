@@ -25,7 +25,7 @@ class Client:
 
         self.current_node = None
         self.logger = None
-        self.set_logger()
+        self.set_logger(loglevel)
         self.next_node()
 
     def __getattr__(self, attr):
@@ -41,14 +41,14 @@ class Client:
 
         return self
 
-    def set_logger(self):
+    def set_logger(self, loglevel):
         self.logger = logging.getLogger(__name__)
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
             '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(loglevel)
 
     def get_requests_session(self):
         session = requests.Session()
