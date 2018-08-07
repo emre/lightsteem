@@ -1,17 +1,19 @@
 import uuid
+from itertools import cycle
+import logging
 
 import requests
 from requests.adapters import HTTPAdapter
 
 DEFAULT_NODES = ["https://api.steemit.com", ]
-MAX_RETRIES = 5
 
 
 class Client:
 
     def __init__(self, nodes=None, max_retries=5,
-                 connect_timeout=3, read_timeout=30):
-        self.nodes = nodes or DEFAULT_NODES
+                 connect_timeout=3, read_timeout=30, loglevel=logging.ERROR):
+        self.nodes = nodes
+        self.node_list = cycle(nodes or DEFAULT_NODES)
         self.api_type = "condenser_api"
         self.queue = []
         self.max_retries = max_retries
@@ -19,7 +21,10 @@ class Client:
         self.read_timeout = read_timeout
         self.session = self.get_requests_session()
 
-        self.current_node = self.nodes[0]
+        self.current_node = None
+        self.logger = None
+        self.set_logger()
+        self.next_node()
 
     def __getattr__(self, attr):
         def callable(*args, **kwargs):
@@ -34,18 +39,33 @@ class Client:
 
         return self
 
+    def set_logger(self):
+        self.logger = logging.getLogger(__name__)
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.DEBUG)
+
     def get_requests_session(self):
         session = requests.Session()
         adapter = HTTPAdapter(
-            max_retries=self.max_retries
+            max_retries=self.max_retries,
         )
+
+        # set a back_off factor for backing off on errors.
+        # formula for sleep:
+        #  {backoff factor} * (2 ^ ({number of total retries} - 1))
+        adapter.max_retries.backoff_factor = 0.1
         session.mount('https://', adapter)
         session.mount('http://', adapter)
 
         return session
 
     def next_node(self):
-        return next(self.nodes)
+        self.current_node = next(self.node_list)
+        self.logger.info("Node set as %s", self.current_node)
 
     def pick_id_for_request(self):
         return str(uuid.uuid4())
@@ -83,11 +103,25 @@ class Client:
             self.queue.append(data)
             return
 
-        response = self.session.post(
-            self.current_node,
-            json=data,
-            timeout=(self.connect_timeout, self.read_timeout)
-        ).json()
+        try:
+            response = self.session.post(
+                self.current_node,
+                json=data,
+                timeout=(self.connect_timeout, self.read_timeout)
+            ).json()
+
+        except requests.exceptions.RequestException as e:
+            self.logger.error(e)
+            num_retries = kwargs.get("num_retries", 1)
+
+            if num_retries >= len(self.nodes):
+                raise e
+
+            kwargs.update({"num_retries": num_retries + 1})
+            self.logger.info("Retrying in another node: %s, %s", args, kwargs)
+            self.next_node()
+
+            return self.request(*args, **kwargs)
 
         response_dict = response["result"]
         if 'request_id' in kwargs and isinstance(response_dict, dict):
