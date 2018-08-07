@@ -17,6 +17,7 @@ class Client:
         self.max_retries = max_retries
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
+        self.session = self.get_requests_session()
 
         self.current_node = self.nodes[0]
 
@@ -82,8 +83,7 @@ class Client:
             self.queue.append(data)
             return
 
-        session = self.get_requests_session()
-        response = session.post(
+        response = self.session.post(
             self.current_node,
             json=data,
             timeout=(self.connect_timeout, self.read_timeout)
