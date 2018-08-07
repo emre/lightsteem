@@ -5,6 +5,8 @@ import logging
 import requests
 from requests.adapters import HTTPAdapter
 
+from .exceptions import RPCNodeException
+
 DEFAULT_NODES = ["https://api.steemit.com", ]
 
 
@@ -84,7 +86,7 @@ class Client:
             "jsonrpc": "2.0",
             "method": f"{self.api_type}.{method_name}",
             "params": params,
-            "id": kwargs.get("request_id") or self.pick_id_for_request(),
+            "id": kwargs.get("id") or self.pick_id_for_request(),
         }
 
         return data
@@ -95,18 +97,18 @@ class Client:
         if batch_data:
             # if that's a batch call, don't do any formatting on data.
             # since it's already formatted for the app base.
-            data = batch_data
+            request_data = batch_data
         else:
-            data = self.get_rpc_request_body(args, kwargs)
+            request_data = self.get_rpc_request_body(args, kwargs)
 
         if kwargs.get("batch"):
-            self.queue.append(data)
+            self.queue.append(request_data)
             return
 
         try:
             response = self.session.post(
                 self.current_node,
-                json=data,
+                json=request_data,
                 timeout=(self.connect_timeout, self.read_timeout)
             ).json()
 
@@ -123,13 +125,28 @@ class Client:
 
             return self.request(*args, **kwargs)
 
-        response_dict = response["result"]
-        if 'request_id' in kwargs and isinstance(response_dict, dict):
-            response_dict.update({
-                "request_id": response
-            })
+        self.validate_response(response, request_data)
 
-        return response_dict
+        if isinstance(response, dict):
+            return response["result"]
+        elif isinstance(response, list):
+            return [r["result"] for r in response]
+
+        raise Exception("Unexpected response: %s" % response)
+
+    def validate_response(self, response, request_data):
+        if 'error' in response:
+            # single request error, no batch call.
+            raise RPCNodeException(
+                response["error"].get("message"),
+                code=response["error"].get("code"),
+                raw_body=response,
+            )
+        if isinstance(response, list):
+            # batch calls returns multiple responses.
+            # what should happen if one of the request is failed, and the other
+            # one is success? Currently, it raises an RPCNodeException anyway.
+            return [self.validate_response(r, request_data) for r in response]
 
     def process_batch(self):
         try:
