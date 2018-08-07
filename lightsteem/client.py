@@ -92,7 +92,6 @@ class Client:
         return data
 
     def request(self, *args, **kwargs):
-
         batch_data = kwargs.get("batch_data")
         if batch_data:
             # if that's a batch call, don't do any formatting on data.
@@ -106,6 +105,7 @@ class Client:
             return
 
         try:
+            self.logger.info("Sending request: %s", request_data)
             response = self.session.post(
                 self.current_node,
                 json=request_data,
