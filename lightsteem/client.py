@@ -1,15 +1,24 @@
-import requests
 import uuid
 
+import requests
+from requests.adapters import HTTPAdapter
+
 DEFAULT_NODES = ["https://api.steemit.com", ]
+MAX_RETRIES = 5
 
 
 class Client:
 
-    def __init__(self, nodes=None, batch_mode=False):
+    def __init__(self, nodes=None, max_retries=5,
+                 connect_timeout=3, read_timeout=30):
         self.nodes = nodes or DEFAULT_NODES
         self.api_type = "condenser_api"
         self.queue = []
+        self.max_retries = max_retries
+        self.connect_timeout = connect_timeout
+        self.read_timeout = read_timeout
+
+        self.current_node = self.nodes[0]
 
     def __getattr__(self, attr):
         def callable(*args, **kwargs):
@@ -24,8 +33,18 @@ class Client:
 
         return self
 
-    def pick_node(self):
-        return self.nodes[0]
+    def get_requests_session(self):
+        session = requests.Session()
+        adapter = HTTPAdapter(
+            max_retries=self.max_retries
+        )
+        session.mount('https://', adapter)
+        session.mount('http://', adapter)
+
+        return session
+
+    def next_node(self):
+        return next(self.nodes)
 
     def pick_id_for_request(self):
         return str(uuid.uuid4())
@@ -63,9 +82,11 @@ class Client:
             self.queue.append(data)
             return
 
-        response = requests.post(
-            self.pick_node(),
+        session = self.get_requests_session()
+        response = session.post(
+            self.current_node,
             json=data,
+            timeout=(self.connect_timeout, self.read_timeout)
         ).json()
 
         response_dict = response["result"]
