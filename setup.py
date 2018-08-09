@@ -9,5 +9,5 @@ setup(
     author='emre yilmaz',
     author_email='mail@emreyilmaz.me',
     description='A light python client to interact with the STEEM blockchain',
-    install_requires=["requests", "backoff"]
+    install_requires=["requests", "backoff", "ecdsa", "dateutils"]
 )
