@@ -7,7 +7,7 @@ from requests.adapters import HTTPAdapter
 
 from .exceptions import RPCNodeException
 
-DEFAULT_NODES = ["https://api.steemit.com", ]
+DEFAULT_NODES = ["https://api.steemit.com", "https://appbase.buildteam.io"]
 
 
 class Client:
