@@ -1,9 +1,9 @@
+import logging
 import uuid
 from itertools import cycle
-import logging
 
+import backoff
 import requests
-from requests.adapters import HTTPAdapter
 
 from .exceptions import RPCNodeException
 
@@ -12,16 +12,14 @@ DEFAULT_NODES = ["https://api.steemit.com", "https://appbase.buildteam.io"]
 
 class Client:
 
-    def __init__(self, nodes=None, max_retries=5,
-                 connect_timeout=3, read_timeout=30, loglevel=logging.ERROR):
+    def __init__(self, nodes=None, connect_timeout=3,
+                 read_timeout=30, loglevel=logging.ERROR):
         self.nodes = nodes
         self.node_list = cycle(nodes or DEFAULT_NODES)
         self.api_type = "condenser_api"
         self.queue = []
-        self.max_retries = max_retries
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
-        self.session = self.get_requests_session()
 
         self.current_node = None
         self.logger = None
@@ -50,21 +48,6 @@ class Client:
         self.logger.addHandler(handler)
         self.logger.setLevel(loglevel)
 
-    def get_requests_session(self):
-        session = requests.Session()
-        adapter = HTTPAdapter(
-            max_retries=self.max_retries,
-        )
-
-        # set a back_off factor for backing off on errors.
-        # formula for sleep:
-        #  {backoff factor} * (2 ^ ({number of total retries} - 1))
-        adapter.max_retries.backoff_factor = 0.1
-        session.mount('https://', adapter)
-        session.mount('http://', adapter)
-
-        return session
-
     def next_node(self):
         self.current_node = next(self.node_list)
         self.logger.info("Node set as %s", self.current_node)
@@ -91,6 +74,22 @@ class Client:
 
         return data
 
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.RequestException),
+                          max_tries=5)
+    def _send_request(self, url, request_data, timeout):
+        self.logger.info("Sending request: %s", request_data)
+        r = requests.post(
+            url,
+            json=request_data,
+            timeout=timeout,
+        )
+
+        r.raise_for_status()
+
+        return r.json()
+
     def request(self, *args, **kwargs):
         batch_data = kwargs.get("batch_data")
         if batch_data:
@@ -105,13 +104,11 @@ class Client:
             return
 
         try:
-            self.logger.info("Sending request: %s", request_data)
-            response = self.session.post(
+            response = self._send_request(
                 self.current_node,
-                json=request_data,
-                timeout=(self.connect_timeout, self.read_timeout)
-            ).json()
-
+                request_data,
+                (self.connect_timeout, self.read_timeout),
+            )
         except requests.exceptions.RequestException as e:
             self.logger.error(e)
             num_retries = kwargs.get("num_retries", 1)
