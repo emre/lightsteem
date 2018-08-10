@@ -137,6 +137,56 @@ print(blocks)
 
 ```
 
+#### Broadcasting
+
+##### Approve emrebeyler as a steem witness
+
+```python
+from lightsteem.client import Client
+from lightsteem.datastructures import Operation
+
+c = Client(
+    keys=["<private_key>",])
+
+op = Operation('account_witness_vote', {
+        'account': '<your_account>',
+        'witness': 'emrebeyler',
+        'approve': True,
+    })
+
+c.broadcast(op)
+```
+
+##### Make a transfer
+
+```python
+from lightsteem.client import Client
+from lightsteem.datastructures import Operation
+
+
+c = Client(
+    keys=["active_key",])
+
+ops = [
+    Operation('transfer', {
+        'from': 'emrebeyler',
+        'to': '<receiver_1>',
+        'amount': '0.001 SBD',
+        'memo': 'test1!'
+    }),
+    Operation('transfer', {
+        'from': 'emrebeyler',
+        'to': '<receiver_2>',
+        'amount': '0.001 SBD',
+        'memo': 'test2!'
+    }),
+
+]
+
+c.broadcast(ops)
+```
+
+
 #### Notes
 
 - You can see the list of api types at [Steem Developers Portal](https://developers.steem.io/apidefinitions/#apidefinitions-condenser-api)

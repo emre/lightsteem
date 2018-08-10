@@ -1,10 +1,8 @@
 from binascii import hexlify, unhexlify
 import hashlib
 import string
-import logging
 from .utils import compat_bytes
 
-log = logging.getLogger(__name__)
 
 """ Default Prefix """
 PREFIX = "STM"
@@ -80,7 +78,6 @@ class Base58(object):
         elif _format.upper() in known_prefixes:
             return _format.upper() + str(self)
         else:
-            log.warn("Format %s unkown. You've been warned!\n" % _format)
             return _format.upper() + str(self)
 
     def __repr__(self):
