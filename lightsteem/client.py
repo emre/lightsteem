@@ -6,25 +6,28 @@ import backoff
 import requests
 
 from .exceptions import RPCNodeException
+from .broadcast.transaction_builder import TransactionBuilder
 
 DEFAULT_NODES = ["https://api.steemit.com", "https://appbase.buildteam.io"]
 
 
 class Client:
 
-    def __init__(self, nodes=None, connect_timeout=3,
-                 read_timeout=30, loglevel=logging.ERROR):
+    def __init__(self, nodes=None, keys=None, connect_timeout=3,
+                 read_timeout=30, loglevel=logging.ERROR, chain=None):
         self.nodes = nodes
         self.node_list = cycle(nodes or DEFAULT_NODES)
         self.api_type = "condenser_api"
         self.queue = []
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
-
+        self.keys = keys or []
+        self.chain = "STEEM"
         self.current_node = None
         self.logger = None
         self.set_logger(loglevel)
         self.next_node()
+        self.transaction_builder = TransactionBuilder(self)
 
     def __getattr__(self, attr):
         def callable(*args, **kwargs):
@@ -152,3 +155,6 @@ class Client:
             # flush the queue in case if any error happens
             self.queue = None
         return resp
+
+    def broadcast(self, op):
+        return self.transaction_builder.broadcast(op, chain=self.chain)
