@@ -1,4 +1,4 @@
-### lightsteem
+### lightsteem <img src="https://travis-ci.org/emre/lightsteem.svg?branch=master">
 
 A light python client to interact with the STEEM blockchain. It's simple and stupid. You ask something, you get something.
 
