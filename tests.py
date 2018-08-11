@@ -4,6 +4,8 @@ import requests_mock
 
 from lightsteem.client import Client
 
+import lightsteem.exceptions
+
 
 class TestClient(unittest.TestCase):
     NODES = ["https://api.steemit.com"]
@@ -56,7 +58,7 @@ class TestClient(unittest.TestCase):
             ('list_vesting_delegations',
              {"start": [None], "limit": 20, "order": "by_delegation"}),
             {},
-            )
+        )
 
         self.assertEqual(
             {'start': [None], 'limit': 20, 'order': 'by_delegation'},
@@ -79,6 +81,73 @@ class TestClient(unittest.TestCase):
         )
 
         self.assertEqual([], rpc_body["params"])
+
+    def test_batch_rpc_calls(self):
+        self.client.get_block(1, batch=True)
+        self.client.get_block_header(2, batch=True)
+
+        self.assertEqual(2, len(self.client.queue))
+        self.assertEqual("condenser_api.get_block",
+                         self.client.queue[0]["method"])
+        self.assertEqual("condenser_api.get_block_header",
+                         self.client.queue[1]["method"])
+
+    def test_validate_response_rpc_error(self):
+        resp = {
+            'jsonrpc': '2.0',
+            'error': {'code': -32000,
+                      'message': "Parse Error:Couldn't parse uint64_t",
+                      'data': ""},
+            'id': 'f0acccf6-ebf6-4952-97da-89b248dfb0d0'
+        }
+
+        with self.assertRaises(lightsteem.exceptions.RPCNodeException):
+            self.client.validate_response(resp)
+
+    def test_validate_repsonse_batch_call(self):
+        resp = [{'previous': '017d08b4416e4ea77d5f582ddf4fc06bcf888eef',
+                 'timestamp': '2018-08-11T10:25:00',
+                 'witness': 'thecryptodrive',
+                 'transaction_merkle_root': '23676c4bdc0074489392892bcf'
+                                            '1a5b779f280c8e',
+                 'extensions': []},
+                {'previous': '017d08b55aa2520bc3a777eaec77e872bb6b8943',
+                 'timestamp': '2018-08-11T10:25:03', 'witness': 'drakos',
+                 'transaction_merkle_root': 'a4be1913157a1be7e4ab'
+                                            'c36a22ffde1c110e683c',
+                 'extensions': []}]
+        validated_resp = self.client.validate_response(resp)
+
+        self.assertEqual(True, isinstance(validated_resp, list))
+        self.assertEqual(2, len(validated_resp))
+
+    def test_validate_repsonse_batch_call_one_error_one_fail(self):
+        resp = [{'previous': '017d08b4416e4ea77d5f582ddf4fc06bcf888eef',
+                 'timestamp': '2018-08-11T10:25:00',
+                 'witness': 'thecryptodrive',
+                 'transaction_merkle_root': '23676c4bdc0074489392892bcf'
+                                            '1a5b779f280c8e',
+                 'extensions': []},
+                {
+                    'jsonrpc': '2.0',
+                    'error': {'code': -32000,
+                              'message': "Parse Error:Couldn't parse uint64_t",
+                              'data': ""},
+                    'id': 'f0acccf6-ebf6-4952-97da-89b248dfb0d0'
+                }]
+
+        with self.assertRaises(lightsteem.exceptions.RPCNodeException):
+            self.client.validate_response(resp)
+
+    def test_process_batch(self):
+        with requests_mock.mock() as m:
+            m.post(TestClient.NODES[0], json={"result": {}})
+            self.client.get_block(12323, batch=True)
+            self.client.get_block(1234, batch=True)
+
+            self.assertEqual(2, len(self.client.queue))
+            self.client.process_batch()
+            self.assertEqual(0, len(self.client.queue))
 
 
 if __name__ == '__main__':
