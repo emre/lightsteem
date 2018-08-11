@@ -125,7 +125,7 @@ class Client:
 
             return self.request(*args, **kwargs)
 
-        self.validate_response(response, request_data)
+        self.validate_response(response)
 
         if isinstance(response, dict):
             return response["result"]
@@ -134,7 +134,7 @@ class Client:
 
         raise Exception("Unexpected response: %s" % response)
 
-    def validate_response(self, response, request_data):
+    def validate_response(self, response):
         if 'error' in response:
             # single request error, no batch call.
             raise RPCNodeException(
@@ -146,14 +146,14 @@ class Client:
             # batch calls returns multiple responses.
             # what should happen if one of the request is failed, and the other
             # one is success? Currently, it raises an RPCNodeException anyway.
-            return [self.validate_response(r, request_data) for r in response]
+            return [self.validate_response(r) for r in response]
 
     def process_batch(self):
         try:
             resp = self.request(batch_data=self.queue)
         finally:
             # flush the queue in case if any error happens
-            self.queue = None
+            self.queue = []
         return resp
 
     def broadcast(self, op):
