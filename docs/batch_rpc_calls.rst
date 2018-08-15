@@ -23,4 +23,4 @@ to take advantage of this:
 This will create one request, but you will have two block details.
 
 .. important ::
-    This feature is not thread-safe. Every instance has a simple queue (list) as their property, and it's flushed every time the ``process_batch``` called.
+    This feature is not thread-safe. Every instance has a simple queue (list) as their property, and it's flushed every time the ``process_batch`` is called.
