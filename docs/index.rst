@@ -43,11 +43,4 @@ Documentation Pages
    gettingstarted
    retryandfailover
    broadcasting
-   recipes
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
+   batch_rpc_calls

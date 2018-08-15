@@ -12,12 +12,15 @@ Client class is the primary class you will work with.
     client = Client()
 
 
-Appbase node supports different `api namespaces <https://developers.steem.io/apidefinitions/#apidefinitions-condenser-api>`_.
+Appbase nodes support different `api namespaces <https://developers.steem.io/apidefinitions/#apidefinitions-condenser-api>`_.
+
 Client class uses **condenser_api** as default. Follow the official developer portal's `api definitions <https://developers.steem.io/apidefinitions/>`_
 to explore available methods.
 
 Examples
 """"""""
+
+**Get Dynamic Global Properties**
 
 .. code-block:: python
 
@@ -25,7 +28,7 @@ Examples
 
     print(props)
 
-This code gets the current dynamic global properties of the blockchain. Let's say you want to use the ``witness_api`` and get the reserve ratio:
+**Get Current Reserve Ratio**
 
 .. code-block:: python
 
@@ -33,7 +36,8 @@ This code gets the current dynamic global properties of the blockchain. Let's sa
 
     print(ratio)
 
-Let's use the ``account_history`` api and get @emrebeyler's account history:
+
+**Get @emrebeyler's account history**
 
 .. code-block:: python
 
@@ -42,11 +46,10 @@ Let's use the ``account_history`` api and get @emrebeyler's account history:
     for op in history:
         print(op)
 
-It's the same for every api type and every call on appbase nodes.
+It's the same convention for every api type and every call on appbase nodes.
 
 .. important ::
     Since, api_type is set when the client instance is called, it is not thread-safe to share Client instances between threads.
-
 
 
 Optional parameters of Client
@@ -65,3 +68,6 @@ to choose.
    :param read_timeout: Integer. Read timeout for nodes. (Default: 30 seconds.)
    :param loglevel: Integer. (Ex: logging.DEBUG)
    :param chain: String. The blockhain we're working with. (Default: STEEM)
+
+
+See :doc:`/broadcasting` to find out how to broadcast transactions into the blockchain.
