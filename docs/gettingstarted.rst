@@ -46,6 +46,15 @@ Examples
     for op in history:
         print(op)
 
+**Get top 100 witness list**
+
+.. code-block:: python
+
+    witness_list = client.get_witnesses_by_vote(None, 100)
+
+    print(witness_list)
+
+
 It's the same convention for every api type and every call on appbase nodes.
 
 .. important ::
