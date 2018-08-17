@@ -8,7 +8,11 @@ import requests
 from .exceptions import RPCNodeException
 from .broadcast.transaction_builder import TransactionBuilder
 
-DEFAULT_NODES = ["https://api.steemit.com", "https://appbase.buildteam.io"]
+DEFAULT_NODES = [
+    "https://api.steemit.com",
+    "https://appbase.buildteam.io",
+    "https://steemd.minnowsupportproject.org",
+]
 
 
 class Client:
