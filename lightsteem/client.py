@@ -26,7 +26,7 @@ class Client:
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
         self.keys = keys or []
-        self.chain = "STEEM"
+        self.chain = chain or "STEEM"
         self.current_node = None
         self.logger = None
         self.set_logger(loglevel)
