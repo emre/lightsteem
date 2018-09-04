@@ -4,3 +4,7 @@ class RPCNodeException(Exception):
         super().__init__(message)
         self.code = code
         self.raw_body = raw_body
+
+
+class StopOuterIteration(Exception):
+    pass

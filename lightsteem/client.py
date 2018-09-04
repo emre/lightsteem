@@ -7,6 +7,8 @@ import requests
 
 from .exceptions import RPCNodeException
 from .broadcast.transaction_builder import TransactionBuilder
+from .helpers.account import Account
+
 
 DEFAULT_NODES = [
     "https://api.steemit.com",
@@ -162,3 +164,6 @@ class Client:
 
     def broadcast(self, op):
         return self.transaction_builder.broadcast(op, chain=self.chain)
+
+    def account(self, username):
+        return Account(self, username)

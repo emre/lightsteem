@@ -44,3 +44,4 @@ Documentation Pages
    retryandfailover
    broadcasting
    batch_rpc_calls
+   helpers
