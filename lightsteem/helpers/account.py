@@ -1,9 +1,11 @@
 import datetime
 import math
+import json
 
 from dateutil.parser import parse
 
 from lightsteem.exceptions import StopOuterIteration
+from lightsteem.datastructures import Operation
 
 
 class Account:
@@ -207,3 +209,54 @@ class Account:
         if rep < 0:
             score = 50 - score
         return round(score, precision)
+
+    def follow(self, account):
+        op = Operation('custom_json', {
+            'required_auths': [],
+            'required_posting_auths': [self.username, ],
+            'id': 'follow',
+            'json': json.dumps(
+                ["follow", {
+                    "follower": self.username,
+                    "following": account,
+                    "what": ["blog", ],
+                }]
+            ),
+        })
+
+        return self.client.broadcast(op)
+
+    def unfollow(self, account):
+        op = Operation('custom_json', {
+            'required_auths': [],
+            'required_posting_auths': [self.username, ],
+            'id': 'follow',
+            'json': json.dumps(
+                ["follow", {
+                    "follower": self.username,
+                    "following": account,
+                    "what": [],
+                }]
+            ),
+        })
+
+        return self.client.broadcast(op)
+
+    def ignore(self, account):
+        op = Operation('custom_json', {
+            'required_auths': [],
+            'required_posting_auths': [self.username, ],
+            'id': 'follow',
+            'json': json.dumps(
+                ["follow", {
+                    "follower": self.username,
+                    "following": account,
+                    "what": ["ignore", ],
+                }]
+            ),
+        })
+
+        return self.client.broadcast(op)
+
+    def unignore(self, account):
+        return self.unfollow(account)
