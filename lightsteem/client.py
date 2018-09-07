@@ -12,7 +12,6 @@ from .helpers.account import Account
 
 DEFAULT_NODES = [
     "https://api.steemit.com",
-    "https://appbase.buildteam.io",
     "https://steemd.minnowsupportproject.org",
 ]
 
