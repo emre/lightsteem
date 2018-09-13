@@ -1,48 +1,15 @@
-import unittest
 import datetime
 import json
+import unittest
 
 import requests_mock
 
+import lightsteem.exceptions
 from lightsteem.client import Client
 from lightsteem.helpers.account import Account
-
-import lightsteem.exceptions
-
-mock_history_max_index = [[3, {
-    'trx_id': '0000000000000000000000000000000000000000', 'block': 25641925,
-    'trx_in_block': 4294967295, 'op_in_trx': 0, 'virtual_op': 7,
-    'timestamp': '2018-09-03T17:24:48', 'op': ['fill_vesting_withdraw',
-                                               {'from_account': 'hellosteem',
-                                                'to_account': 'hellosteem',
-                                                'withdrawn': '187.37083 VESTS',
-                                                'deposited': '0.092 STEEM'}]}]]
-
-
-mock_history = [[1,
-                 {'trx_id': '985bb048e2068cdb311829ad3d76f4dc2947811a',
-                  'block': 25153549, 'trx_in_block': 1, 'op_in_trx': 0,
-                  'virtual_op': 0, 'timestamp': '2018-08-17T18:12:57',
-                  'op': ['transfer',
-                         {'from': 'hellosteem', 'to': 'sekhmet',
-                          'amount': '0.001 STEEM', 'memo': ''}]}],
-                [2,
-                 {'trx_id': 'bb1b6ddf13bcffe5bba8d55c3c37a5c672ff7309',
-                  'block': 25153549, 'trx_in_block': 0, 'op_in_trx': 0,
-                  'virtual_op': 0, 'timestamp': '2018-08-17T18:12:57',
-                  'op': ['limit_order_create',
-                         {'owner': 'hellosteem', 'orderid': 1534529209,
-                          'amount_to_sell': '0.100 STEEM',
-                          'min_to_receive': '100.000 SBD',
-                          'fill_or_kill': False,
-                          'expiration': '1969-12-31T23:59:59'}]}],
-                [3,
-                 {'trx_id': '851c9a4ec9a32855b9981ea6b97c7911abaf8996',
-                  'block': 25153418, 'trx_in_block': 0, 'op_in_trx': 0,
-                  'virtual_op': 0, 'timestamp': '2018-08-17T18:06:24',
-                  'op': ['transfer',
-                         {'from': 'hellosteem', 'to': 'fabien',
-                          'amount': '0.001 STEEM', 'memo': 'Test'}]}]]
+from lightsteem.helpers.event_listener import EventListener
+from tests_mockdata import mock_block_25926363, mock_dygp_result, \
+    mock_block_25926364, mock_history, mock_history_max_index
 
 
 class TestClient(unittest.TestCase):
@@ -257,6 +224,71 @@ class TestAccountHelper(unittest.TestCase):
                     account="hellosteem", only_operation_data=False))
 
             self.assertEqual(3, history[0][0])
+
+
+class TestEventListener(unittest.TestCase):
+
+    def setUp(self):
+        self.client = Client(nodes=TestClient.NODES)
+
+    def test_filtering(self):
+
+        def match_dygp(request):
+            params = json.loads(request.text)
+            return 'get_dynamic_global_properties' in params["method"]
+
+        def match_block_25926363(request):
+            return '25926363' in request.text
+
+        def match_block_25926364(request):
+            return '25926364' in request.text
+
+        with requests_mock.mock() as m:
+            m.post(TestClient.NODES[0], json=mock_dygp_result,
+                   additional_matcher=match_dygp)
+            m.post(TestClient.NODES[0], json=mock_block_25926363,
+                   additional_matcher=match_block_25926363)
+            m.post(TestClient.NODES[0], json=mock_block_25926364,
+                   additional_matcher=match_block_25926364)
+            events = EventListener(
+                self.client,
+                start_block=25926363,
+                end_block=25926364)
+
+            # test filter
+            ops = list(
+                events.on('producer_reward', {"producer": "emrebeyler"}))
+            self.assertEqual(1, len(ops))
+            self.assertEqual("emrebeyler", ops[0]["op"][1]["producer"])
+
+            # test condition
+            ops = list(events.on(
+                'comment', condition=lambda x: x["author"] == "jennybeans"))
+
+            self.assertEqual(1, len(ops))
+            self.assertEqual("jennybeans", ops[0]["op"][1]["author"])
+
+            # test multiple filtering
+            ops = list(events.on(
+                ['withdraw_vesting_route', 'producer_reward']))
+            self.assertEqual(2, len(ops))
+
+            # test filter and condition together
+            ops = list(events.on(
+                ['transfer_to_vesting'],
+                {'from': 'manimani'},
+                condition=lambda x: x["to"] not in ["kstop1", "nodaji"])
+            )
+
+            self.assertEqual(0, len(ops))
+
+            ops = list(events.on(
+                ['transfer_to_vesting'],
+                {'from': 'manimani'},
+                condition=lambda x: x["to"] == "kstop1")
+            )
+
+            self.assertEqual(1, len(ops))
 
 
 if __name__ == '__main__':
