@@ -174,3 +174,71 @@ A simple class to convert "1234.1234 STEEM" kind of values to Decimal.
 
     print(amount.amount)
     print(amount.symbol)
+
+EventListener Helper
+=================================
+
+EventListener is a helper class to listen specific operations (events) on the
+blockchain.
+
+**Stream blockchain for the incoming transfers related to a specific account**
+
+.. code-block:: python
+
+    from lightsteem.helpers.event_listener import EventListener
+    from lightsteem.client import Client
+
+    client = Client()
+    events = EventListener(client)
+
+    for transfer in events.on('transfer', filter_by={"to": "emrebeyler"}):
+        print(transfer)
+
+
+
+**Stream for incoming vote actions**
+
+.. code-block:: python
+
+    events = EventListener(client)
+
+    for witness_vote in events.on('account_witness_vote', filter_by={"witness": "emrebeyler"}):
+        print(witness_vote)
+
+
+**Conditions via callables**
+
+Stream for the comments and posts tagged with utopian-io.
+
+.. code-block:: python
+
+    from lightsteem.client import Client
+    from lightsteem.helpers.event_listener import EventListener
+
+    import json
+
+    c = Client()
+    events = EventListener(c)
+
+    def filter_tags(comment_body):
+        if not comment_body.get("json_metadata"):
+            return False
+
+        try:
+            tags = json.loads(comment_body["json_metadata"])["tags"]
+        except KeyError:
+            return False
+        return "utopian-io" in tags
+
+
+    for op in events.on("comment", condition=filter_tags):
+        print(op)
+
+EventListener class also has
+
+- start_block
+- end_block
+
+params that you can limit the streaming process into specific blocks.
+
+
