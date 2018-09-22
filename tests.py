@@ -1,6 +1,7 @@
 import datetime
 import json
 import unittest
+import pytz
 
 import requests_mock
 
@@ -159,6 +160,26 @@ class TestAccountHelper(unittest.TestCase):
 
     def setUp(self):
         self.client = Client(nodes=TestClient.NODES)
+
+    def test_vp_with_hf20(self):
+        last_vote_time = datetime.datetime.utcnow() - datetime.timedelta(
+            hours=24)
+
+        utc = pytz.timezone('UTC')
+        last_vote_time = utc.localize(last_vote_time)
+
+        result = {
+            'voting_manabar': {
+                'current_mana': 7900,
+                'last_update_time': int(last_vote_time.timestamp())
+            }
+        }
+
+        with requests_mock.mock() as m:
+            m.post(TestClient.NODES[0], json={"result": [result]})
+            account = self.client.account('emrebeyler')
+
+        self.assertEqual(99, account.vp())
 
     def test_vp(self):
         last_vote_time = datetime.datetime.utcnow() - datetime.timedelta(
