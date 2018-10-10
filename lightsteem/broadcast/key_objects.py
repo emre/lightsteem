@@ -6,6 +6,11 @@ from binascii import hexlify, unhexlify
 import ecdsa
 import hashlib
 
+"""
+This classes are mostly derived from
+https://github.com/steemit/steem-python/blob/master/steembase/account.py
+"""
+
 
 class Address(object):
     """ Address class
@@ -202,3 +207,33 @@ class PrivateKey(object):
     def __bytes__(self):
         """ Returns the raw private key """
         return compat_bytes(self._wif)
+
+
+class PasswordKey(object):
+    """ This class derives a private key given the account name, the
+        role and a password. It leverages the technology of Brainkeys
+        and allows people to have a secure private key by providing a
+        passphrase only.
+    """
+
+    def __init__(self, account, password, role="active"):
+        self.account = account
+        self.role = role
+        self.password = password
+
+    def get_private(self):
+        """ Derive private key from the brain key and the current sequence
+            number
+        """
+        a = compat_bytes(self.account + self.role + self.password, 'utf8')
+        s = hashlib.sha256(a).digest()
+        return PrivateKey(hexlify(s).decode('ascii'))
+
+    def get_public(self):
+        return self.get_private().pubkey
+
+    def get_private_key(self):
+        return self.get_private()
+
+    def get_public_key(self):
+        return self.get_public()
