@@ -111,7 +111,8 @@ class TransactionBuilder:
                 and not (sig[32] & 0x80)
                 and not (sig[32] == 0 and not (sig[33] & 0x80)))
 
-    def broadcast(self, operations, chain=None):
+    def broadcast(self, operations, chain=None, dry_run=False):
+        preferred_api_type = self.client.api_type
         if not isinstance(operations, list):
             operations = [operations, ]
 
@@ -192,5 +193,9 @@ class TransactionBuilder:
             sigs.append(hexlify(sigstr).decode('ascii'))
 
         self.transaction["signatures"] = sigs
+        self.client.api_type = preferred_api_type
+
+        if dry_run:
+            return self.transaction
 
         return self.client.broadcast_transaction(self.transaction)

@@ -161,8 +161,9 @@ class Client:
             self.queue = []
         return resp
 
-    def broadcast(self, op):
-        return self.transaction_builder.broadcast(op, chain=self.chain)
+    def broadcast(self, op, dry_run=False):
+        return self.transaction_builder.broadcast(
+            op, chain=self.chain, dry_run=dry_run)
 
     def account(self, username):
         return Account(self, username)
