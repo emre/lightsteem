@@ -197,6 +197,50 @@ class TestAccountHelper(unittest.TestCase):
 
         self.assertEqual(99.0, account.vp())
 
+    def test_rc(self):
+
+        def match_get_accounts(request):
+            method = json.loads(request.text)["method"]
+            return method == "condenser_api.get_accounts"
+
+        def match_find_rc_accounts(request):
+            method = json.loads(request.text)["method"]
+            return method == "rc_api.find_rc_accounts"
+
+        last_update_time = datetime.datetime.utcnow() - datetime.timedelta(
+            hours=24)
+        last_update_timestamp = last_update_time.replace(
+            tzinfo=datetime.timezone.utc).timestamp()
+
+        result = {
+            "rc_accounts": [{
+                'account': 'emrebeyler',
+                'rc_manabar': {
+                    'current_mana': '750',
+                    'last_update_time': last_update_timestamp
+                },
+                'max_rc_creation_adjustment': {
+                    'amount': '1029141630',
+                    'precision': 6,
+                    'nai': '@@000000037'
+                },
+                'max_rc': '1000'
+            }
+            ]}
+
+        with requests_mock.mock() as m:
+            m.post(
+                TestClient.NODES[0],
+                json={"result": [{"foo": "bar"}]},
+                additional_matcher=match_get_accounts)
+            m.post(
+                TestClient.NODES[0],
+                json={"result": result},
+                additional_matcher=match_find_rc_accounts)
+
+            self.assertEqual(float(95), self.client.account(
+                'emrebeyler').rc())
+
     def test_reputation(self):
         reputation_sample = '74765490672156'  # 68.86
         with requests_mock.mock() as m:
