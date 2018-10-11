@@ -212,7 +212,7 @@ class Account:
 
         return round(total_vp, precision)
 
-    def rc(self, precision=2):
+    def rc(self, consider_regeneration=True, precision=2):
         preffered_api_type = self.client.api_type
         try:
             rc_info = self.client('rc_api').find_rc_accounts(
@@ -222,6 +222,10 @@ class Account:
 
             last_mana = int(rc_info["rc_manabar"]["current_mana"])
             max_mana = int(rc_info["max_rc"])
+
+            if not consider_regeneration:
+                # the voting power user has after the last vote they casted.
+                return round(last_mana * 100 / max_mana, precision)
             updated_at = datetime.datetime.utcfromtimestamp(
                 rc_info["rc_manabar"]["last_update_time"])
             diff_in_seconds = (
@@ -233,6 +237,8 @@ class Account:
 
             return round(current_mana_percent, precision)
 
+            # @todo: should there be some methods to calculate
+            # regeneration estimation until %100?
             # total_mana_required = 100 - current_mana_percent
             # recharge_in_seconds = total_mana_required * \
             #                       VOTING_MANA_REGENERATION_IN_SECONDS / 100

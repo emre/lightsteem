@@ -241,6 +241,9 @@ class TestAccountHelper(unittest.TestCase):
             self.assertEqual(float(95), self.client.account(
                 'emrebeyler').rc())
 
+            self.assertEqual(float(75), self.client.account(
+                'emrebeyler').rc(consider_regeneration=False))
+
     def test_reputation(self):
         reputation_sample = '74765490672156'  # 68.86
         with requests_mock.mock() as m:

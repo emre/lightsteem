@@ -147,6 +147,25 @@ If you want the VP at the time the last vote casted, you can pass consider_regen
     print(account.vp())
     print(account.vp(consider_regeneration=False))
 
+Getting resource credits
+-----------------------------------
+This helper method determines the account's resource credits in percent. In default, It considers
+account's regenerated RC. (Actual RC)
+
+If you want the Rc at the time the last vote casted, you can pass consider_regeneration=False.
+
+.. code-block:: python
+
+    from lightsteem.client import Client
+
+    client = Client()
+    account = client.account('emrebeyler')
+
+    print(account.rc())
+    print(account.rc(consider_regeneration=False))
+
+
+
 Getting account reputation
 -----------------------------------
 
