@@ -447,7 +447,7 @@ class RCModel(object):
                 pool - block_info["usage"][resource_name], dt)
 
             block_info["new_pool"][resource_name] = pool - block_info["decay"][
-                resource_name] + eblock_info["budget"][resource_name] - \
+                resource_name] + block_info["budget"][resource_name] - \
                                                     block_info["usage"][
                                                         resource_name]
         return block_info
