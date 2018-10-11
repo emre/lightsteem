@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lightsteem',
-    version='0.1.2',
+    version='0.1.3',
     packages=find_packages('.'),
     url='http://github.com/emre/lightsteem',
     license='MIT',
