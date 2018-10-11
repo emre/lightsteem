@@ -8,6 +8,7 @@ import requests
 from .exceptions import RPCNodeException
 from .broadcast.transaction_builder import TransactionBuilder
 from .helpers.account import Account
+from .helpers.rc import ResourceCredit
 
 
 DEFAULT_NODES = [
@@ -167,3 +168,6 @@ class Client:
 
     def account(self, username):
         return Account(self, username)
+
+    def rc(self):
+        return ResourceCredit(self)
