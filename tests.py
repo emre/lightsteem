@@ -9,6 +9,8 @@ import lightsteem.exceptions
 from lightsteem.client import Client
 from lightsteem.helpers.account import Account
 from lightsteem.helpers.event_listener import EventListener
+from lightsteem.helpers.amount import Amount
+
 from tests_mockdata import mock_block_25926363, mock_dygp_result, \
     mock_block_25926364, mock_history, mock_history_max_index
 
@@ -215,7 +217,6 @@ class TestAccountHelper(unittest.TestCase):
             return params[1] != -1
 
         with requests_mock.mock() as m:
-
             m.post(TestClient.NODES[0], json={
                 "result": mock_history_max_index},
                    additional_matcher=match_max_index_request)
@@ -253,7 +254,6 @@ class TestEventListener(unittest.TestCase):
         self.client = Client(nodes=TestClient.NODES)
 
     def test_filtering(self):
-
         def match_dygp(request):
             params = json.loads(request.text)
             return 'get_dynamic_global_properties' in params["method"]
@@ -310,6 +310,35 @@ class TestEventListener(unittest.TestCase):
             )
 
             self.assertEqual(1, len(ops))
+
+
+class TestAmountHelper(unittest.TestCase):
+
+    def setUp(self):
+        self.client = Client(nodes=TestClient.NODES)
+
+    def test_standard_input(self):
+        amount = Amount('1.942 SBD')
+        self.assertEqual(float(1.942), float(amount.amount))
+        self.assertEqual('SBD', amount.symbol)
+
+    def test_asset_dict_input(self):
+        amount = Amount.from_asset({
+            'amount': '1029141630',
+            'precision': 6,
+            'nai': '@@000000037'
+        })
+        self.assertEqual(float('1029.141630'), float(amount.amount))
+        self.assertEqual('VESTS', amount.symbol)
+
+    def test_asset_dict_output(self):
+        amount = Amount('0.010 STEEM')
+        asset_dict = amount.asset
+        self.assertEqual({
+            "amount": "10",
+            "precision": 3,
+            "nai": "@@000000021"
+        }, asset_dict)
 
 
 if __name__ == '__main__':
