@@ -22,14 +22,18 @@ class ResourceCredit:
             signed_tx_hex = self.client.get_transaction_hex(tx)
             tx_size = len(bytes.fromhex(signed_tx_hex))
 
-            chain_props = self.client(
-                'condenser_api').get_dynamic_global_properties()
+            self.client('condenser_api').get_dynamic_global_properties(
+                batch=True)
+            self.client('rc_api').get_resource_params(batch=True)
+            self.client('rc_api').get_resource_pool(batch=True)
+
+            chain_props, resource_params, resource_pool = self.client.\
+                process_batch()
+
+            resource_pool = resource_pool["resource_pool"]
+
             total_vesting_shares = int(
                 Amount(chain_props["total_vesting_shares"]).amount)
-            resource_params = self.client(
-                'rc_api').get_resource_params()
-            resource_pool = self.client('rc_api').get_resource_pool()[
-                "resource_pool"]
             rc_regen = total_vesting_shares // (
                     STEEM_RC_REGEN_TIME // STEEM_BLOCK_INTERVAL)
             model = RCModel(resource_params=resource_params,
