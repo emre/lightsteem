@@ -183,19 +183,28 @@ class Account:
         )
 
     def vp(self, consider_regeneration=True, precision=2):
+        voting_manabar = self.raw_data.get("voting_manabar", {})
+        voting_power = self.raw_data.get(
+            "voting_power", voting_manabar.get("current_mana"))
 
         if not consider_regeneration:
             # the voting power user has after the last vote they casted.
-            return round(self.raw_data['voting_power'] / 100, precision)
+            return round(voting_power / 100, precision)
+
+        last_vote_time = self.raw_data.get(
+            "last_vote_time", voting_manabar.get("last_update_time"))
 
         # the voting power user has after the last vote they casted and
         # recharging factors.
 
-        last_vote_time = parse(self.raw_data['last_vote_time'])
+        last_vote_time = datetime.datetime.utcfromtimestamp(
+            last_vote_time) if isinstance(
+            last_vote_time, int) else parse(last_vote_time)
+
         diff_in_seconds = (datetime.datetime.utcnow() -
                            last_vote_time).total_seconds()
         regenerated_vp = diff_in_seconds * 10000 / 86400 / 5
-        total_vp = (self.raw_data['voting_power'] + regenerated_vp) / 100
+        total_vp = (voting_power + regenerated_vp) / 100
         if total_vp > 100:
             total_vp = 100
 
