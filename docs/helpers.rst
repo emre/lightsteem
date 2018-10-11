@@ -242,3 +242,30 @@ EventListener class also has
 params that you can limit the streaming process into specific blocks.
 
 
+ResourceCredits Helper
+=================================
+
+ResourceCredits class has a simple helper function to get RC costs on specific
+operations.
+
+For example, if you want to learn about how much resource credit will be exhausted
+for an **account_claim** operation:
+
+.. code-block:: python
+
+    from lightsteem.client import Client
+    from lightsteem.datastructures import Operation
+
+    client = Client(keys=[<your_active_key>])
+
+    op = Operation(
+        'claim_account',
+        {
+            "creator": "emrebeyler",
+            "fee": "0.000 STEEM",
+            "extensions": [],
+        }
+    )
+
+    print(client.rc().get_cost(op))
+
