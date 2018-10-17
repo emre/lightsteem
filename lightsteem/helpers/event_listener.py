@@ -71,6 +71,8 @@ class EventListener:
         # magically turn the op_type to a list if it's a single string.
         op_types = op_type if isinstance(op_type, list) else [op_type, ]
         for op_data in self.transaction_listener.listen():
+            if 'op' not in op_data:
+                continue
             operation_type, operation_value = op_data["op"][0:2]
             if operation_type not in op_types:
                 continue
